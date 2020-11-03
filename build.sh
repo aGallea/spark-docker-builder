@@ -2,13 +2,16 @@
 
 NC='\x1b[0m';
 ColorBright='\x1b[1m';
+ColorFgRed='\x1b[31m';
 
 MIRROR=archive.apache.org
 
 DOWNLOAD_SPARK="${DOWNLOAD_SPARK:-true}"
 DOWNLOAD_AWS_JARS="${DOWNLOAD_AWS_JARS:-true}"
 BUILD_DOCKER_IMAGE="${BUILD_DOCKER_IMAGE:-true}"
+PUSH_DOCKER_IMAGE="${PUSH_DOCKER_IMAGE:-false}"
 
+REPOSITORY_NAME=${REPOSITORY_NAME:-"spark"}
 SPARK_VERSION=${SPARK_VERSION:-"3.0.1"}
 HADOOP_VERSION=${HADOOP_VERSION:-"3.2"}
 IMAGE_TAG=${IMAGE_TAG:-"latest"}
@@ -21,6 +24,7 @@ function start {
     extractSpark
     downloadAwsJars
     buildDcokerImage
+    pushDockerImage
 }
 
 function downloadSpark {
@@ -53,6 +57,17 @@ function buildDcokerImage {
     if [[ "$BUILD_DOCKER_IMAGE" = true ]] ; then
         echo -e "${ColorBright}Building Docker image...${NC}"
         $SPARK_HOME/bin/docker-image-tool.sh -n -u root -t ${IMAGE_TAG} build
+    fi
+}
+
+function pushDockerImage {
+    if [[ "$PUSH_DOCKER_IMAGE" = true ]] ; then
+        if [[ -z "${REGISTRY_NAME}" ]]; then
+            echo -e "${ColorBright}${ColorFgRed}REGISTRY_NAME must be set before pushing image${NC}"
+        else
+            docker tag spark:${IMAGE_TAG} ${REGISTRY_NAME}/${REPOSITORY_NAME}:${IMAGE_TAG}
+            docker push ${REGISTRY_NAME}/${REPOSITORY_NAME}:${IMAGE_TAG}
+        fi
     fi
 }
 
